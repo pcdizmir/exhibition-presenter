@@ -58,9 +58,13 @@
     pointer-events: none;
   }
   #caption.hidden { display: none; }
-  #caption .left { min-width: 0; transition: opacity .8s ease; }
+  #caption .left { min-width: 0; display: flex; align-items: flex-end; gap: 2.4cqmin; transition: opacity .8s ease; }
   #caption .left.faded { opacity: 0; }
-  #caption .left > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #caption .lines { min-width: 0; }
+  #caption .lines > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* QR to the work's page; white padding keeps a quiet zone for phone cameras */
+  #c-qr { flex: none; width: 11.5cqmin; height: 11.5cqmin; padding: .5cqmin; background: #fff; border-radius: .4cqmin; image-rendering: pixelated; }
+  #c-qr[hidden] { display: none; }
   #c-title { font-size: 3.8cqmin; font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
   #c-artist { margin-top: 1cqmin; font-size: 2.1cqmin; color: #ececec; line-height: 1.2; }
   #c-location { margin-top: .7cqmin; font-family: var(--mono); font-size: 1.45cqmin; color: #c8c8c8; letter-spacing: .04em; }
@@ -152,9 +156,12 @@
 
   <div id="caption">
     <div class="left" id="c-left">
-      <div id="c-title"></div>
-      <div id="c-artist"></div>
-      <div id="c-location"></div>
+      <img id="c-qr" alt="QR code: more about this work" hidden>
+      <div class="lines">
+        <div id="c-title"></div>
+        <div id="c-artist"></div>
+        <div id="c-location"></div>
+      </div>
     </div>
     <div class="right"><b id="c-event"></b><span id="c-event-sub"></span></div>
   </div>
@@ -195,6 +202,7 @@
           <label>Shuffle <input type="checkbox" id="s-shuffle"></label>
           <label>Sound on <input type="checkbox" id="s-sound"></label>
           <label>Show caption <input type="checkbox" id="s-caption"></label>
+          <label>Show QR code <input type="checkbox" id="s-qr"></label>
           <label>Rotation
             <select id="s-rotation">
               <option value="0">0°</option><option value="90">90°</option>
@@ -232,7 +240,7 @@
   const isVideo = w => /\.mp4$/i.test(w.file);
 
   // ---------- settings ----------
-  const screenDefaults = ids => ({ selected: ids || [], imageDuration: 20, shuffle: false, sound: false, caption: true, rotation: 0 });
+  const screenDefaults = ids => ({ selected: ids || [], imageDuration: 20, shuffle: false, sound: false, caption: true, qr: true, rotation: 0 });
 
   function defaultSettings() {
     const d = window.DEFAULT_ASSIGNMENT || {};
@@ -432,6 +440,9 @@
     $("c-location").textContent = w.location || "";
     $("c-artist").style.display = $("c-artist").textContent ? "" : "none";
     $("c-location").style.display = w.location ? "" : "none";
+    const qr = $("c-qr");
+    if (w.qr && cfg().qr) { qr.src = w.qr; qr.hidden = false; }
+    else { qr.removeAttribute("src"); qr.hidden = true; }
   }
 
   // ---------- view ----------
@@ -441,6 +452,7 @@
     root.style.setProperty("--rotation", (c.rotation || 0) + "deg");
     root.classList.toggle("portrait", c.rotation == 90 || c.rotation == 270);
     $("caption").classList.toggle("hidden", !c.caption);
+    if (current) writeCaption(current);
     video.muted = !c.sound;
   }
 
@@ -496,7 +508,7 @@
       const playing = current && current.id === w.id;
       const tags = (!w.file ? `<span class="tag missing">NO FILE</span>` : "") +
                    (errors.has(w.id) ? `<span class="tag error">FAILED TO PLAY</span>` : "");
-      const kind = !w.file ? "" : isVideo(w) ? ("video " + fmtTime(durations[w.id])) : "image";
+      const kind = (!w.file ? "" : isVideo(w) ? ("video " + fmtTime(durations[w.id])) : "image") + (w.qr ? (w.file ? " · " : "") + "QR" : "");
       const boxes = SCREENS.map(n => {
         const on = settings.screens[n].selected.includes(w.id);
         return `<td class="s ${n === screen ? "current" : ""}"><input type="checkbox" data-id="${esc(w.id)}" data-screen="${n}" ${on ? "checked" : ""} ${w.file ? "" : "disabled"}></td>`;
@@ -527,6 +539,7 @@
     $("s-shuffle").checked = !!c.shuffle;
     $("s-sound").checked = !!c.sound;
     $("s-caption").checked = !!c.caption;
+    $("s-qr").checked = !!c.qr;
     $("s-rotation").value = String(c.rotation || 0);
     $("load-file").disabled = !window.SETTINGS;
     renderNow();
@@ -583,6 +596,7 @@
     else if (t.id === "s-shuffle") { c.shuffle = t.checked; save(); refreshPlaylist(false); renderPanel(); return; }
     else if (t.id === "s-sound") c.sound = t.checked;
     else if (t.id === "s-caption") c.caption = t.checked;
+    else if (t.id === "s-qr") c.qr = t.checked;
     else if (t.id === "s-rotation") c.rotation = Number(t.value);
     else return;
     save();
