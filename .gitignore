@@ -1,0 +1,5 @@
+# artwork files are not kept in the repo (size + copyright); prepare.sh generates them
+media/
+originals/
+*.log
+.DS_Store

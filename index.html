@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exhibition Presenter</title>
+<style>
+  :root {
+    --bg: #000;
+    --fg: #f2f2f2;
+    --muted: #8d8d8d;
+    --line: #2a2a2a;
+    --panel: rgba(14, 14, 14, 0.96);
+    --accent: #ff4f6d;
+    --warn: #f0b84a;
+    --mono: ui-monospace, "DejaVu Sans Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", "Helvetica Neue", "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden; font-family: var(--sans); }
+  body.hide-cursor, body.hide-cursor * { cursor: none !important; }
+
+  /* Rotatable root: use 90/270 when a screen is physically mounted in portrait */
+  #root {
+    position: fixed; top: 50%; left: 50%;
+    width: 100vw; height: 100vh;
+    transform: translate(-50%, -50%) rotate(var(--rotation, 0deg));
+    container-type: size;
+    display: flex; flex-direction: column;
+  }
+  #root.portrait { width: 100vh; height: 100vw; }
+
+  /* ---- stage ---- */
+  #stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+  #stage video, #stage img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; background: #000;
+    opacity: 0; transition: opacity .8s ease;
+  }
+  #stage .visible { opacity: 1; }
+  #empty {
+    position: absolute; inset: 0; display: none; place-items: center;
+    color: #444; font: 2cqmin/1.4 var(--mono); text-align: center;
+  }
+  #empty.active { display: grid; }
+
+  /* ---- caption ---- */
+  /* Sits on top of the work over a soft gradient rising from the bottom; the work uses the full screen */
+  #caption {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+    padding: 18cqmin 3.4cqmin 3.2cqmin;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 4cqmin;
+    background: linear-gradient(to top,
+      rgba(0,0,0,.88) 0%, rgba(0,0,0,.80) 14%, rgba(0,0,0,.62) 32%, rgba(0,0,0,.40) 52%,
+      rgba(0,0,0,.20) 70%, rgba(0,0,0,.07) 86%, rgba(0,0,0,0) 100%);
+    text-shadow: 0 0 2.4cqmin rgba(0,0,0,.6), 0 0 .4cqmin rgba(0,0,0,.4);
+    pointer-events: none;
+  }
+  #caption.hidden { display: none; }
+  #caption .left { min-width: 0; transition: opacity .8s ease; }
+  #caption .left.faded { opacity: 0; }
+  #caption .left > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #c-title { font-size: 3.8cqmin; font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
+  #c-artist { margin-top: 1cqmin; font-size: 2.1cqmin; color: #ececec; line-height: 1.2; }
+  #c-location { margin-top: .7cqmin; font-family: var(--mono); font-size: 1.45cqmin; color: #c8c8c8; letter-spacing: .04em; }
+  #caption .right { flex: none; text-align: right; line-height: 1.35; }
+  #caption .right b { display: block; font-size: 1.7cqmin; font-weight: 600; color: var(--fg); }
+  #caption .right span { display: block; margin-top: .5cqmin; font-family: var(--mono); font-size: 1.45cqmin; color: #c8c8c8; letter-spacing: .04em; }
+
+  /* ---- screen number badge & settings button ---- */
+  #badge {
+    position: absolute; top: 2cqmin; left: 2cqmin; z-index: 5;
+    font: 600 3cqmin/1 var(--mono); padding: 1cqmin 1.6cqmin; background: var(--accent); color: #000;
+    opacity: 0; transition: opacity .5s; pointer-events: none;
+  }
+  #badge.show { opacity: 1; }
+  #settings-btn {
+    position: absolute; top: 14px; right: 14px; z-index: 6;
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid #444;
+    background: rgba(0,0,0,.6); color: #ddd; font-size: 22px; cursor: pointer;
+    opacity: 0; transition: opacity .3s; pointer-events: none;
+  }
+  body.mouse-active #settings-btn { opacity: 1; pointer-events: auto; }
+
+  /* ---- panel ---- */
+  #panel {
+    position: absolute; top: 0; right: 0; bottom: 0; z-index: 10;
+    width: min(860px, 100%); background: var(--panel); border-left: 1px solid var(--line);
+    display: none; flex-direction: column; font-size: 14px; line-height: 1.4;
+  }
+  #panel.open { display: flex; }
+  #panel header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  #panel h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: .02em; }
+  #panel .spacer { flex: 1; }
+  #panel button, #panel select, #panel input[type=number] {
+    font: inherit; color: var(--fg); background: #1d1d1d; border: 1px solid #3a3a3a; border-radius: 6px; padding: 6px 10px;
+  }
+  #panel button { cursor: pointer; }
+  #panel button:hover { background: #2a2a2a; }
+  #panel button.primary { background: var(--fg); color: #000; border-color: var(--fg); }
+  #panel input[type=number] { width: 72px; }
+  #panel input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .screen-picker { display: inline-flex; border: 1px solid #3a3a3a; border-radius: 6px; overflow: hidden; }
+  .screen-picker button { border: 0 !important; border-radius: 0 !important; padding: 6px 12px !important; background: #1d1d1d; }
+  .screen-picker button.selected { background: var(--accent) !important; color: #000; font-weight: 600; }
+  #panel .body { flex: 1; overflow: auto; padding: 4px 18px 18px; }
+  #panel section { margin-top: 18px; }
+  #panel h2 { font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+
+  #now { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+  #now .text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #now .text small { color: var(--muted); font-family: var(--mono); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 6px 6px; border-bottom: 1px solid #1f1f1f; text-align: left; vertical-align: middle; }
+  th { font: 600 11px/1 var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; position: sticky; top: 0; background: #0e0e0e; z-index: 1; }
+  th.s, td.s { text-align: center; width: 52px; }
+  th.s.current, td.s.current { background: rgba(255, 79, 109, .10); }
+  th.s.current { color: var(--accent); }
+  td.thumb { width: 64px; }
+  td.thumb img { width: 56px; height: 40px; object-fit: cover; display: block; background: #222; border-radius: 3px; }
+  td.thumb .none { width: 56px; height: 40px; border: 1px dashed #444; border-radius: 3px; }
+  .name { font-weight: 600; }
+  .name .playing { color: var(--accent); font-size: 11px; margin-left: 6px; font-family: var(--mono); }
+  .sub { color: #aaa; font-size: 12.5px; }
+  .meta { color: var(--muted); font: 11.5px var(--mono); }
+  .tag { display: inline-block; font: 600 10px/1 var(--mono); padding: 3px 5px; border-radius: 3px; margin-left: 4px; vertical-align: 1px; }
+  .tag.missing { background: #3a2a10; color: var(--warn); }
+  .tag.error { background: #3a1018; color: var(--accent); }
+  tr.divider td { padding-top: 18px; color: var(--muted); font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; border-bottom-color: #333; }
+  tr.disabled .name, tr.disabled .sub { opacity: .45; }
+  tfoot td { color: var(--muted); font: 11.5px var(--mono); border-bottom: 0; }
+
+  .settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 18px; }
+  .settings label { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+  .note kbd { font: 11px var(--mono); border: 1px solid #444; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: #ddd; }
+  #source-status { color: var(--warn); font-size: 12.5px; }
+</style>
+</head>
+<body class="hide-cursor">
+<div id="root">
+  <div id="stage">
+    <video id="video" playsinline muted preload="auto"></video>
+    <img id="image" alt="">
+    <div id="empty"><div>No works selected for this screen.<br>Press <b>P</b> to open the panel.</div></div>
+    <div id="badge">SCREEN 1</div>
+    <button id="settings-btn" title="Panel (P)">⚙</button>
+  </div>
+
+  <div id="caption">
+    <div class="left" id="c-left">
+      <div id="c-title"></div>
+      <div id="c-artist"></div>
+      <div id="c-location"></div>
+    </div>
+    <div class="right"><b id="c-event"></b><span id="c-event-sub"></span></div>
+  </div>
+
+  <aside id="panel" aria-label="Exhibition panel">
+    <header>
+      <h1>Exhibition panel</h1>
+      <span class="meta">This window:</span>
+      <div class="screen-picker" id="screen-picker"></div>
+      <span class="spacer"></span>
+      <button id="fullscreen">Fullscreen</button>
+      <button id="close" class="primary">Close</button>
+    </header>
+    <div class="body">
+      <section>
+        <h2>Now playing</h2>
+        <div id="now">
+          <button id="prev" title="Previous (←)">◀</button>
+          <div class="text" id="now-text">—</div>
+          <button id="next" title="Next (→)">▶</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Which works play on which screen</h2>
+        <table>
+          <thead><tr id="table-head"></tr></thead>
+          <tbody id="table"></tbody>
+          <tfoot><tr id="table-foot"></tr></tfoot>
+        </table>
+        <p class="note">Changes are saved immediately; the highlighted column (this window's screen) takes effect right away. Works play in list order.</p>
+      </section>
+
+      <section>
+        <h2 id="settings-title">Screen settings</h2>
+        <div class="settings">
+          <label>Image duration (s) <input type="number" id="s-image" min="3" max="600" step="1"></label>
+          <label>Shuffle <input type="checkbox" id="s-shuffle"></label>
+          <label>Sound on <input type="checkbox" id="s-sound"></label>
+          <label>Show caption <input type="checkbox" id="s-caption"></label>
+          <label>Rotation
+            <select id="s-rotation">
+              <option value="0">0°</option><option value="90">90°</option>
+              <option value="180">180°</option><option value="270">270°</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Move settings</h2>
+        <div class="actions">
+          <button id="export">Download settings.js</button>
+          <button id="load-file">Revert to settings.js</button>
+          <button id="reset">Reset to default assignment</button>
+        </div>
+        <p class="note" id="source-status"></p>
+        <p class="note">Settings are stored in this device's browser. Plan all four screens in one place, click <b>Download settings.js</b> and put the file next to <code>index.html</code> — every Pi will start with that layout.</p>
+        <p class="note"><kbd>P</kbd> panel · <kbd>←</kbd> <kbd>→</kbd> previous / next · <kbd>F</kbd> fullscreen · <kbd>Esc</kbd> close</p>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<script src="works.js"></script>
+<script src="settings.js" onerror="void 0"></script>
+<script>
+(() => {
+  const STORE = "pcd-exhibition:settings:v1";
+  const STORE_SCREEN = "pcd-exhibition:screen";
+  const SCREENS = [1, 2, 3, 4];
+  const WORKS = window.WORKS || [];
+  const byId = Object.fromEntries(WORKS.map(w => [w.id, w]));
+  const $ = id => document.getElementById(id);
+  const isVideo = w => /\.mp4$/i.test(w.file);
+
+  // ---------- settings ----------
+  const screenDefaults = ids => ({ selected: ids || [], imageDuration: 20, shuffle: false, sound: false, caption: true, rotation: 0 });
+
+  function defaultSettings() {
+    const d = window.DEFAULT_ASSIGNMENT || {};
+    return { screens: Object.fromEntries(SCREENS.map(n => [n, screenDefaults(d[n])])) };
+  }
+
+  function normalize(s) {
+    // fill in missing fields, drop ids that no longer exist
+    s = s && s.screens ? s : defaultSettings();
+    for (const n of SCREENS) {
+      const c = Object.assign(screenDefaults(), s.screens[n] || {});
+      c.selected = (c.selected || []).filter(id => byId[id]);
+      s.screens[n] = c;
+    }
+    return s;
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) return { settings: normalize(JSON.parse(raw)), source: "local" };
+    } catch (_) {}
+    if (window.SETTINGS) return { settings: normalize(structuredClone(window.SETTINGS)), source: "file" };
+    return { settings: normalize(null), source: "default" };
+  }
+
+  let { settings, source } = load();
+
+  function save() {
+    source = "local";
+    try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch (_) {}
+    renderSourceStatus();
+  }
+
+  // ---------- which screen ----------
+  const params = new URLSearchParams(location.search);
+  let screen = parseInt(params.get("screen"), 10);
+  if (!SCREENS.includes(screen)) {
+    try { screen = parseInt(localStorage.getItem(STORE_SCREEN), 10); } catch (_) {}
+  }
+  const screenUnknown = !SCREENS.includes(screen);
+  if (screenUnknown) screen = 1;
+
+  function switchScreen(n) {
+    screen = n;
+    try { localStorage.setItem(STORE_SCREEN, String(n)); } catch (_) {}
+    const u = new URL(location.href);
+    u.searchParams.set("screen", n);
+    history.replaceState(null, "", u);
+    showBadge();
+    applyView();
+    refreshPlaylist(true);
+    renderPanel();
+  }
+
+  const cfg = () => settings.screens[screen];
+
+  // ---------- player ----------
+  const video = $("video"), image = $("image");
+  let playlist = [], index = -1, current = null;
+  let token = 0, timer = null;
+  let lastProgress = { t: -1, at: 0 };
+  const errors = new Set();
+  const durations = {};
+
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  function buildPlaylist() {
+    const sel = new Set(cfg().selected);
+    const list = WORKS.filter(w => sel.has(w.id) && w.file);
+    return cfg().shuffle ? shuffle(list) : list;
+  }
+
+  // When the list changes, don't interrupt what's playing; if it was removed, move on right away.
+  function refreshPlaylist(force) {
+    playlist = buildPlaylist();
+    $("empty").classList.toggle("active", playlist.length === 0);
+    if (!playlist.length) { stop(); return; }
+    const i = current ? playlist.findIndex(w => w.id === current.id) : -1;
+    if (i >= 0 && !force) {
+      index = i;
+      video.loop = playlist.length === 1 && isVideo(current);
+      return;
+    }
+    index = -1;
+    advance(1);
+  }
+
+  function stop() {
+    token++;
+    clearTimeout(timer);
+    current = null;
+    video.classList.remove("visible"); image.classList.remove("visible");
+    $("c-left").classList.add("faded");
+    setTimeout(() => { if (!current) { video.removeAttribute("src"); video.load(); } }, 900);
+    renderNow();
+  }
+
+  function advance(dir) {
+    if (!playlist.length) return;
+    if (cfg().shuffle && dir > 0 && index === playlist.length - 1) {
+      // reshuffle after each round, without repeating the same work back to back
+      const last = current;
+      playlist = buildPlaylist();
+      if (playlist.length > 1 && last && playlist[0].id === last.id) playlist.push(playlist.shift());
+      index = -1;
+    }
+    index = (index + dir + playlist.length) % playlist.length;
+    show(playlist[index]);
+  }
+
+  function show(w) {
+    const t = ++token;
+    clearTimeout(timer);
+    const prevWasVideo = current && isVideo(current);
+    video.classList.remove("visible"); image.classList.remove("visible");
+    $("c-left").classList.add("faded");
+    current = w;
+    renderPanel();
+    renderNow();
+
+    const fade = (prevWasVideo || image.src) ? 800 : 0;
+    setTimeout(() => {
+      if (t !== token) return;
+      writeCaption(w);
+      if (isVideo(w)) playVideo(w, t); else showImage(w, t);
+    }, fade);
+  }
+
+  function reveal(el) {
+    el.classList.add("visible");
+    $("c-left").classList.remove("faded");
+  }
+
+  function playVideo(w, t) {
+    image.removeAttribute("src");
+    video.muted = !cfg().sound;
+    video.loop = playlist.length === 1;
+    video.src = w.file;
+    lastProgress = { t: -1, at: performance.now() };
+    const p = video.play();
+    if (p) p.catch(() => {
+      // if autoplay with sound is blocked, retry muted
+      if (t !== token) return;
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+    video.onplaying = () => { if (t === token) reveal(video); };
+    video.onloadedmetadata = () => { durations[w.id] = video.duration; };
+    video.onended = () => { if (t === token && !video.loop) advance(1); };
+    video.onerror = () => {
+      if (t !== token) return;
+      errors.add(w.id); renderPanel();
+      timer = setTimeout(() => { if (t === token) advance(1); }, 1500);
+    };
+  }
+
+  function showImage(w, t) {
+    video.pause(); video.removeAttribute("src"); video.load();
+    image.onload = () => {
+      if (t !== token) return;
+      reveal(image);
+      if (playlist.length > 1) timer = setTimeout(() => { if (t === token) advance(1); }, Math.max(3, Number(cfg().imageDuration) || 20) * 1000);
+      preloadNext();
+    };
+    image.onerror = () => {
+      if (t !== token) return;
+      errors.add(w.id); renderPanel();
+      timer = setTimeout(() => { if (t === token) advance(1); }, 1500);
+    };
+    image.src = w.file;
+  }
+
+  // warm the cache for the next image
+  function preloadNext() {
+    const n = playlist[(index + 1) % playlist.length];
+    if (n && !isVideo(n)) { const i = new Image(); i.src = n.file; }
+  }
+
+  // Watchdog: if a video stalls (stops progressing), retry; if that fails, skip
+  setInterval(() => {
+    if (!current || !isVideo(current) || !video.src) return;
+    const now = performance.now();
+    if (video.currentTime !== lastProgress.t) { lastProgress = { t: video.currentTime, at: now }; return; }
+    const stalled = now - lastProgress.at;
+    if (video.paused && !video.ended && stalled > 3000) video.play().catch(() => {});
+    if (stalled > 12000) { lastProgress.at = now; advance(1); }
+  }, 2000);
+
+  function writeCaption(w) {
+    // without a title, the artist name moves up to the large line
+    $("c-title").textContent = w.title || w.artist || "";
+    $("c-artist").textContent = w.title ? (w.artist || "") : "";
+    $("c-location").textContent = w.location || "";
+    $("c-artist").style.display = $("c-artist").textContent ? "" : "none";
+    $("c-location").style.display = w.location ? "" : "none";
+  }
+
+  // ---------- view ----------
+  function applyView() {
+    const c = cfg();
+    const root = $("root");
+    root.style.setProperty("--rotation", (c.rotation || 0) + "deg");
+    root.classList.toggle("portrait", c.rotation == 90 || c.rotation == 270);
+    $("caption").classList.toggle("hidden", !c.caption);
+    video.muted = !c.sound;
+  }
+
+  let badgeTimer;
+  function showBadge() {
+    $("badge").textContent = "SCREEN " + screen;
+    $("badge").classList.add("show");
+    clearTimeout(badgeTimer);
+    badgeTimer = setTimeout(() => $("badge").classList.remove("show"), 4000);
+  }
+
+  // cursor & settings button only appear while the mouse moves
+  let mouseTimer;
+  document.addEventListener("mousemove", () => {
+    document.body.classList.remove("hide-cursor");
+    document.body.classList.add("mouse-active");
+    clearTimeout(mouseTimer);
+    mouseTimer = setTimeout(() => {
+      if (panelOpen()) return;
+      document.body.classList.add("hide-cursor");
+      document.body.classList.remove("mouse-active");
+    }, 2500);
+  });
+
+  // ---------- panel ----------
+  const panel = $("panel");
+  const panelOpen = () => panel.classList.contains("open");
+  function openPanel() { panel.classList.add("open"); document.body.classList.remove("hide-cursor"); renderPanel(); measureDurations(); }
+  function closePanel() { panel.classList.remove("open"); }
+
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fmtTime = s => {
+    if (!isFinite(s)) return "";
+    s = Math.round(s);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  };
+  const thumbOf = w => w.file ? w.file.replace(/^media\//, "media/thumbs/").replace(/\.mp4$/i, ".jpg") : null;
+  const estDuration = (w, c) => {
+    if (!w.file) return 0;
+    if (!isVideo(w)) return Number(c.imageDuration) || 20;
+    return durations[w.id] || 0;
+  };
+
+  function renderPanel() {
+    if (!panelOpen()) return;
+    $("screen-picker").innerHTML = SCREENS.map(n => `<button data-screen="${n}" class="${n === screen ? "selected" : ""}">Screen ${n}</button>`).join("");
+
+    $("table-head").innerHTML = `<th></th><th>Work</th>` +
+      SCREENS.map(n => `<th class="s ${n === screen ? "current" : ""}">S${n}</th>`).join("");
+
+    const row = w => {
+      const thumb = thumbOf(w);
+      const playing = current && current.id === w.id;
+      const tags = (!w.file ? `<span class="tag missing">NO FILE</span>` : "") +
+                   (errors.has(w.id) ? `<span class="tag error">FAILED TO PLAY</span>` : "");
+      const kind = !w.file ? "" : isVideo(w) ? ("video " + fmtTime(durations[w.id])) : "image";
+      const boxes = SCREENS.map(n => {
+        const on = settings.screens[n].selected.includes(w.id);
+        return `<td class="s ${n === screen ? "current" : ""}"><input type="checkbox" data-id="${esc(w.id)}" data-screen="${n}" ${on ? "checked" : ""} ${w.file ? "" : "disabled"}></td>`;
+      }).join("");
+      return `<tr class="${w.file ? "" : "disabled"}">
+        <td class="thumb">${thumb ? `<img loading="lazy" src="${esc(thumb)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'none'}))">` : `<div class="none"></div>`}</td>
+        <td><div class="name">${esc(w.artist)}${playing ? `<span class="playing">● PLAYING</span>` : ""}${tags}</div>
+            <div class="sub">${esc(w.title || "—")}${w.location ? " · " + esc(w.location) : ""}</div>
+            <div class="meta">${kind}</div></td>${boxes}</tr>`;
+    };
+
+    const listed = WORKS.filter(w => w.listed !== false);
+    const extra = WORKS.filter(w => w.listed === false);
+    $("table").innerHTML = listed.map(row).join("") +
+      (extra.length ? `<tr class="divider"><td colspan="${2 + SCREENS.length}">Files in the folder that are not on the list</td></tr>` + extra.map(row).join("") : "");
+
+    $("table-foot").innerHTML = `<td></td><td>Selected · estimated loop length</td>` + SCREENS.map(n => {
+      const c = settings.screens[n];
+      const sel = WORKS.filter(w => c.selected.includes(w.id) && w.file);
+      const total = sel.reduce((t, w) => t + estDuration(w, c), 0);
+      return `<td class="s ${n === screen ? "current" : ""}">${sel.length}<br>${fmtTime(total)}</td>`;
+    }).join("");
+
+    const c = cfg();
+    $("settings-title").textContent = `Screen ${screen} settings`;
+    // don't overwrite a field that's being typed into
+    if (document.activeElement !== $("s-image")) $("s-image").value = c.imageDuration;
+    $("s-shuffle").checked = !!c.shuffle;
+    $("s-sound").checked = !!c.sound;
+    $("s-caption").checked = !!c.caption;
+    $("s-rotation").value = String(c.rotation || 0);
+    $("load-file").disabled = !window.SETTINGS;
+    renderNow();
+    renderSourceStatus();
+  }
+
+  function renderNow() {
+    const el = $("now-text");
+    if (!el) return;
+    if (!current) { el.innerHTML = `<small>Nothing playing</small>`; return; }
+    el.innerHTML = `<b>${esc(current.artist)}</b> — ${esc(current.title || "")} <small>(${index + 1}/${playlist.length})</small>`;
+  }
+
+  function renderSourceStatus() {
+    const t = { local: "Using the layout saved on this device.", file: "Using the layout from settings.js.", default: "Using the default assignment." };
+    $("source-status").textContent = t[source] || "";
+  }
+
+  // video durations are measured one by one for the panel
+  let measuring = false;
+  function measureDurations() {
+    if (measuring) return;
+    const pending = WORKS.filter(w => w.file && isVideo(w) && !(w.id in durations));
+    if (!pending.length) return;
+    measuring = true;
+    const v = document.createElement("video");
+    v.preload = "metadata"; v.muted = true;
+    let i = 0;
+    const next = () => {
+      if (i >= pending.length) { measuring = false; v.removeAttribute("src"); v.load(); renderPanel(); return; }
+      const w = pending[i++];
+      v.onloadedmetadata = () => { durations[w.id] = v.duration; next(); };
+      v.onerror = () => { durations[w.id] = NaN; next(); };
+      v.src = w.file;
+    };
+    next();
+  }
+
+  // ---------- events ----------
+  panel.addEventListener("change", ev => {
+    const t = ev.target;
+    if (t.matches("#table input[type=checkbox]")) {
+      const n = Number(t.dataset.screen), id = t.dataset.id;
+      const sel = new Set(settings.screens[n].selected);
+      t.checked ? sel.add(id) : sel.delete(id);
+      settings.screens[n].selected = WORKS.map(w => w.id).filter(x => sel.has(x));
+      save();
+      if (n === screen) refreshPlaylist(false);
+      renderPanel();
+      return;
+    }
+    const c = cfg();
+    if (t.id === "s-image") c.imageDuration = Math.max(3, Number(t.value) || 20);
+    else if (t.id === "s-shuffle") { c.shuffle = t.checked; save(); refreshPlaylist(false); renderPanel(); return; }
+    else if (t.id === "s-sound") c.sound = t.checked;
+    else if (t.id === "s-caption") c.caption = t.checked;
+    else if (t.id === "s-rotation") c.rotation = Number(t.value);
+    else return;
+    save();
+    applyView();
+    renderPanel();
+  });
+
+  panel.addEventListener("click", ev => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    if (b.dataset.screen) return switchScreen(Number(b.dataset.screen));
+    switch (b.id) {
+      case "close": return closePanel();
+      case "prev": return advance(-1);
+      case "next": return advance(1);
+      case "fullscreen": return toggleFullscreen();
+      case "export": return exportSettings();
+      case "load-file":
+        if (!window.SETTINGS || !confirm("Discard the changes on this device and load the layout from settings.js?")) return;
+        try { localStorage.removeItem(STORE); } catch (_) {}
+        settings = normalize(structuredClone(window.SETTINGS)); source = "file";
+        applyView(); refreshPlaylist(true); renderPanel(); return;
+      case "reset":
+        if (!confirm("Reset all screens to the default assignment?")) return;
+        settings = defaultSettings(); save();
+        applyView(); refreshPlaylist(true); renderPanel(); return;
+    }
+  });
+
+  function exportSettings() {
+    const body = "// Exhibition layout — put this file next to index.html.\n" +
+      "// " + new Date().toISOString() + "\n" +
+      "window.SETTINGS = " + JSON.stringify(settings, null, 2) + ";\n";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([body], { type: "text/javascript" }));
+    a.download = "settings.js";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  }
+
+  $("settings-btn").addEventListener("click", openPanel);
+  $("stage").addEventListener("dblclick", () => panelOpen() ? closePanel() : openPanel());
+
+  document.addEventListener("keydown", ev => {
+    if (ev.target.matches("input[type=number], select")) return;
+    const k = ev.key.toLowerCase();
+    if (k === "p" || k === "m") { panelOpen() ? closePanel() : openPanel(); }
+    else if (k === "escape") closePanel();
+    else if (k === "arrowright") advance(1);
+    else if (k === "arrowleft") advance(-1);
+    else if (k === "f") toggleFullscreen();
+    else if (["1", "2", "3", "4"].includes(k) && panelOpen()) switchScreen(Number(k));
+  });
+
+  // Keep settings in sync when two windows on the same device share a browser profile
+  window.addEventListener("storage", ev => {
+    if (ev.key !== STORE) return;
+    const before = JSON.stringify(cfg());
+    ({ settings, source } = load());
+    applyView();
+    if (JSON.stringify(cfg()) !== before) refreshPlaylist(false);
+    renderPanel();
+  });
+
+  // ---------- start ----------
+  const event = window.EVENT || {};
+  $("c-event").textContent = event.title || "";
+  $("c-event-sub").textContent = event.subtitle || "";
+  if (event.title) document.title = event.title;
+  applyView();
+  showBadge();
+  refreshPlaylist(true);
+  if (screenUnknown) openPanel();
+})();
+</script>
+</body>
+</html>
