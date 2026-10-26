@@ -25,10 +25,9 @@ LIST=$(cat <<'EOF'
 raphael_s171029_alt_landscape_4min.mp4|raphael-de-courville
 001 - Agoston Nagy.mp4|agoston-nagy-semantic-noise
 33 - Aluan Wang.mp4|aluan-wang-inkfield
-20260927_133610 - Anna Carreras.mp4|anna-carreras-idoni
+20260927_133610 - Anna Carreras.mov|anna-carreras-idoni
 ASL_lossless - Bedirhan Ugur.mp4|bedirhan-ugur-altered-state-of-line
 CamilleRoux_Resilience-OOB-02_2024_90s - Camille Roux.mp4|camille-roux-resilience
-DemoRecording - Ahmad Moussa.mov|gorilla-sun-reaction-diffusion-explorer
 Stratum (5) - Dist Collective.png|dist-collective-stratum
 monolith - oğuz ülgen tunç.png|oguz-tunc-ulgen-monolith
 Nihavendcomp (1) - Dilek Atimtay.mp4|sonic-chimes-nihavend
@@ -41,12 +40,13 @@ ac_futures_neonscepter_feelings_synthwave_reactive_hexagons - Amir Chamani.mp4|a
 Julien_Gachadoat_Binary_drift - Julien Gachadoat.mp4|x-julien-gachadoat-binary-drift
 memento-loop - Berkin Dündar.mp4|x-berkin-dundar-memento-loop
 TracesofIntervention - Gözde Damla TURHAN.mov|x-gozde-damla-turhan-traces-of-intervention
-Sealed_Lips_Video - Ruveyda.mp4|x-ruveyda-sealed-lips
+Sealed_Lips_Video - Ruveyda.png|x-ruveyda-sealed-lips
 trim_E112025F-AB03-4689-8A49-5797620C0668 (1) - Ali Osman Bayram.mov|x-ali-osman-bayram
 metropolis8000px (1) - Murat Atimtay.png|x-murat-atimtay-metropolis
 Moducon (11) - Sadık Aksu.jpg|x-sadik-aksu-moducon
-PosterImage2 - Buse.png|x-buse-poster
-Screenshot 2026-10-22 at 19.52.41 - Onat Saygı.png|x-onat-saygi
+PosterImage2 - Buse.mp4|x-buse-unravel
+OnatSaygi-Tyhme Flows.png|x-onat-saygi-thyme-flows
+Noema loop 03 - Paweł Dudko.mp4|x-pawel-dudko-noema
 EOF
 )
 

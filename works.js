@@ -18,7 +18,7 @@ window.WORKS = [
   { id: "anna-carreras",        artist: "Anna Carreras",        title: "Idoni",                             location: "Barcelona",   file: "media/anna-carreras-idoni.mp4", qr: "qr/idoni.svg" },
   { id: "bedirhan-ugur",        artist: "Bedirhan Uğur",        title: "Altered State of Line",             location: "Bursa",       file: "media/bedirhan-ugur-altered-state-of-line.mp4", qr: "qr/altered-state-of-line.svg" },
   { id: "camille-roux",         artist: "Camille Roux",         title: "Résilience — Out of Band #2",       location: "Montpellier", file: "media/camille-roux-resilience.mp4", qr: "qr/resilience-out-of-band-2.svg" },
-  { id: "gorilla-sun-rd",       artist: "Gorilla Sun",          title: "Reaction Diffusion Explorer",       location: "",            file: "media/gorilla-sun-reaction-diffusion-explorer.mp4" },
+  { id: "gorilla-sun-rd",       artist: "Gorilla Sun",          title: "Reaction Diffusion Explorer",       location: "",            file: null },
   { id: "dist-collective",      artist: "Dist Collective",      title: "Stratum",                           location: "",            file: "media/dist-collective-stratum.jpg", qr: "qr/stratum.svg" },
   { id: "oguz-tunc-ulgen",      artist: "Oğuz Tunç Ülgen",      title: "Monolith",                          location: "İzmir",       file: "media/oguz-tunc-ulgen-monolith.jpg", qr: "qr/monolith.svg" },
   { id: "nubplus",              artist: "NubPlus",              title: "Glass shattered, but I still see",  location: "Libertalia",  file: null, qr: "qr/glass-shattered-but-i-still-see.svg" },
@@ -34,12 +34,13 @@ window.WORKS = [
   { id: "x-julien-gachadoat",   artist: "Julien Gachadoat",     title: "Binary drift",                      location: "", file: "media/x-julien-gachadoat-binary-drift.mp4", qr: "qr/binary-drift.svg", listed: false },
   { id: "x-berkin-dundar",      artist: "Berkin Dündar",        title: "Memento",                      location: "", file: "media/x-berkin-dundar-memento-loop.mp4", qr: "qr/memento.svg", listed: false },
   { id: "x-gozde-damla-turhan", artist: "Gözde Damla Turhan",   title: "Traces of Intervention",            location: "", file: "media/x-gozde-damla-turhan-traces-of-intervention.mp4", qr: "qr/traces-of-intervention.svg", listed: false },
-  { id: "x-ruveyda",            artist: "Rüveyda Cengiz",       title: "Sealed Lips, Echo Chamber: Unsaid. Undone",                       location: "", file: "media/x-ruveyda-sealed-lips.mp4", qr: "qr/sealed-lips-echo-chamber-unsaid-undone.svg", listed: false },
+  { id: "x-ruveyda",            artist: "Rüveyda Cengiz",       title: "Sealed Lips, Echo Chamber: Unsaid. Undone",                       location: "", file: "media/x-ruveyda-sealed-lips.jpg", qr: "qr/sealed-lips-echo-chamber-unsaid-undone.svg", listed: false },
   { id: "x-ali-osman-bayram",   artist: "Ali Osman Bayram",     title: "",                                  location: "", file: "media/x-ali-osman-bayram.mp4", listed: false },
   { id: "x-murat-atimtay",      artist: "Murat Atimtay",        title: "Metropolis IX",                        location: "", file: "media/x-murat-atimtay-metropolis.jpg", qr: "qr/metropolis-ix.svg", listed: false },
   { id: "x-sadik-aksu",         artist: "Sadık Aksu",           title: "Moducon",                           location: "", file: "media/x-sadik-aksu-moducon.jpg", qr: "qr/moducon.svg", listed: false },
-  { id: "x-buse",               artist: "Buse Anıl",             title: "Unravel",                                  location: "", file: "media/x-buse-poster.jpg", qr: "qr/unravel.svg", listed: false },
-  { id: "x-onat-saygi",         artist: "Onat Saygı",           title: "Thyme Flows",                                  location: "", file: "media/x-onat-saygi.jpg", qr: "qr/thyme-flows.svg", listed: false },
+  { id: "x-buse",               artist: "Buse Anıl",             title: "Unravel",                                  location: "", file: "media/x-buse-unravel.mp4", qr: "qr/unravel.svg", listed: false },
+  { id: "x-onat-saygi",         artist: "Onat Saygı",           title: "Thyme Flows",                                  location: "", file: "media/x-onat-saygi-thyme-flows.jpg", qr: "qr/thyme-flows.svg", listed: false },
+  { id: "x-pawel-dudko",        artist: "Paweł Dudko",          title: "Noema",                             location: "", file: "media/x-pawel-dudko-noema.mp4", qr: "qr/noema.svg", listed: false },
 ];
 
 // Screens start with this assignment when no settings have been saved
@@ -47,6 +48,6 @@ window.WORKS = [
 window.DEFAULT_ASSIGNMENT = {
   1: ["loackme", "agoston-nagy", "dist-collective", "deniz-kucukcan"],
   2: ["raphael-de-courville", "camille-roux", "oguz-tunc-ulgen", "bedirhan-ugur"],
-  3: ["sonic-chimes", "ac-futures", "gorilla-sun-rd", "rob-scalera"],
+  3: ["sonic-chimes", "ac-futures", "rob-scalera"],
   4: ["pastelhope", "aluan-wang", "anna-carreras", "gorilla-sun-parts"],
 };
