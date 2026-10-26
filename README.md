@@ -5,6 +5,7 @@ A small exhibition player that loops artworks like a slideshow across multiple s
 - A single `index.html`. No server, internet connection or install needed — it runs from `file://`.
 - Every screen opens the same file with its own number: `index.html?screen=1` … `?screen=4`.
 - Videos play for their full length; images (PNG/JPG) stay up for a set duration (20 s by default). The playlist loops.
+- Long works can sit out some cycles (e.g. a 6-minute video plays in full once every 3 cycles), so they don't dominate every loop.
 - A fixed caption on top of the work, over a soft gradient rising from the bottom: a QR code to the work's page on the PCD İzmir site, title, artist, location. Event name at the bottom right.
 - A panel that opens over the screen lets you choose which works play on which screen.
 
@@ -27,6 +28,7 @@ media/         converted artwork files (NOT in the repo, see below)
 ### Panel
 - **P**, a double-click, or the ⚙ button that appears at the top right when you move the mouse opens the panel.
 - The table has S1–S4 checkboxes for each work. This window's column is highlighted and changes take effect immediately.
+- **Plays** column: how often a work plays — every cycle (default) or once every 2–5 cycles. The work still plays in full when its turn comes. Several works set to skip cycles on the same screen are spread over different cycles, so they don't pile up. Stepping back with ← ignores this rule. This setting is shared by all screens; the footer shows the average cycle length.
 - Screen settings: image duration, shuffle, sound (off by default), show/hide caption, show/hide QR code, rotation (for screens mounted in portrait).
 - **Download settings.js** downloads the layout of all four screens as a single file.
 - Keys: **P** panel · **←/→** previous/next · **F** fullscreen · **Esc** close.
@@ -82,7 +84,7 @@ Rotation metadata from phone videos is applied (videos shot in portrait come out
 
 1. `works.js`:
    - `EVENT.title` / `EVENT.subtitle` → text at the bottom right
-   - `WORKS` → for each work: `id`, `artist`, `title`, `location`, `file` (`media/...`), optionally `qr` (`qr/...svg`). If the file hasn't arrived yet, use `file: null` (shown as "NO FILE" in the panel). Use `listed: false` for files that are in the folder but not on the list.
+   - `WORKS` → for each work: `id`, `artist`, `title`, `location`, `file` (`media/...`), optionally `qr` (`qr/...svg`) and `every` (default for the Plays column, e.g. `every: 3`). If the file hasn't arrived yet, use `file: null` (shown as "NO FILE" in the panel). Use `listed: false` for files that are in the folder but not on the list.
    - `DEFAULT_ASSIGNMENT` → which works play on which screen when nothing has been saved yet.
    - If the title is empty, the artist name is shown on the large line.
 2. `LIST` in `prepare.sh`: one `original file name|output name` line per work.

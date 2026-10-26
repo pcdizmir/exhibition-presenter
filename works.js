@@ -7,6 +7,7 @@ window.EVENT = {
 // List of works. Edit captions here.
 // file:   a file in media/ (produced by prepare.sh). null = file not received yet.
 // qr:     QR code (qr/*.svg) linking to the work's page on the PCD İzmir site, shown next to the caption.
+// every:  (optional) default for the panel's Plays column: play once every N cycles (e.g. every: 3).
 // listed: false = files found in the folder that are not on the open call list
 //         (shown separately in the panel, not assigned to any screen by default).
 window.WORKS = [
