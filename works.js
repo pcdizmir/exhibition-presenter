@@ -12,7 +12,7 @@ window.WORKS = [
   { id: "camille-roux",         artist: "Camille Roux",         title: "Résilience — Out of Band #2",       location: "Montpellier", file: "media/camille-roux-resilience.mp4", qr: "qr/resilience-out-of-band-2.svg", duration: 0, every: 2 },
   { id: "dist-collective",      artist: "Dist Collective",      title: "Stratum",                           location: "Valencia",    file: "media/dist-collective-stratum.jpg", qr: "qr/stratum.svg" },
   { id: "oguz-tunc-ulgen",      artist: "Oğuz Tunç Ülgen",      title: "Monolith",                          location: "İzmir",       file: "media/oguz-tunc-ulgen-monolith.jpg", qr: "qr/monolith.svg" },
-  { id: "nubplus",              artist: "NubPlus",              title: "Glass shattered, but I still see",  location: "Libertalia",  file: "media/x-ali-osman-bayram.mp4", qr: "qr/glass-shattered-but-i-still-see.svg" },
+  { id: "nubplus",              artist: "NubPlus",              title: "Glass shattered, but I still see",  location: "Podgorica",  file: "media/x-ali-osman-bayram.mp4", qr: "qr/glass-shattered-but-i-still-see.svg" },
   { id: "sonic-chimes",         artist: "Sonic Chimes",         title: "Nihavend",                          location: "İzmir",       file: "media/sonic-chimes-nihavend.mp4", qr: "qr/nihavend.svg", duration: 0, every: 4 },
   { id: "rob-scalera",          artist: "Rob Scalera",          title: "Underlayer",                        location: "İstanbul",    file: "media/rob-scalera-underlayer.jpg", qr: "qr/underlayer.svg" },
   { id: "deniz-kucukcan",       artist: "Deniz Küçükcan",       title: "chet",                              location: "İzmir",       file: "media/deniz-kucukcan-chet.mp4", qr: "qr/chet.svg" },
