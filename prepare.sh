@@ -6,9 +6,9 @@
 # Usage: ./prepare.sh --source /path/to/originals   (skips existing outputs)
 #        ./prepare.sh --source ... --force         (regenerates everything)
 
-set -u
+set -eu
 cd "$(dirname "$0")"
-SRC="../originals"
+SRC="pcd_izmir_artworks"
 OUT="media"
 FORCE=0
 while [ $# -gt 0 ]; do
@@ -22,6 +22,7 @@ mkdir -p "$OUT"
 
 # original file name | output name (without extension)
 LIST=$(cat <<'EOF'
+project_nom.mp4|x-project-nom
 raphael_s171029_alt_landscape_4min.mp4|raphael-de-courville
 001 - Agoston Nagy.mp4|agoston-nagy-semantic-noise
 33 - Aluan Wang.mp4|aluan-wang-inkfield
